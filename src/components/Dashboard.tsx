@@ -155,7 +155,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onSessionSubmit }) => {
       {/* Enhanced Timer Section */}
       <div className="relative">
         <Timer seconds={seconds} isActive={isWorking} />
-        <div className="flex justify-center -mt-24 z-50 absolute left-0 right-0">
+        <div className="flex justify-center -mt-24 z-10 absolute left-0 right-0">
           {!isWorking ? (
             <button
               onClick={handleClockIn}

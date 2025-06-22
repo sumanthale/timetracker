@@ -89,21 +89,21 @@ function App() {
       {/* Enhanced Tab Navigation */}
 <div className="sticky top-16 z-40 bg-white py-3">
   <div className="max-w-md mx-auto px-4">
-    <div className="flex overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
+    <div className="flex overflow-hidden rounded-xl border border-gray-200 bg-gray-100">
       {tabs.map((tab) => {
         const Icon = tab.icon;
         const isActive = activeTab === tab.id;
+
         return (
           <button
             key={tab.id}
             onClick={() =>
               setActiveTab(tab.id as "dashboard" | "history")
             }
-            className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-all duration-300 ease-in-out
-              ${
-                isActive
-                  ? "bg-white text-blue-600 shadow-inner"
-                  : "text-gray-500 hover:bg-white hover:text-blue-500"
+            className={`flex-1 relative flex items-center justify-center gap-2 py-3 text-sm font-semibold transition-all duration-300
+              ${isActive
+                ? "bg-white text-blue-600 font-bold shadow-md z-10"
+                : "text-gray-500 hover:text-blue-500 hover:bg-white opacity-70"
               }`}
           >
             <Icon
@@ -112,12 +112,18 @@ function App() {
               }`}
             />
             <span>{tab.label}</span>
+
+            {/* Highlight indicator under active tab */}
+            {isActive && (
+              <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-1 w-1/2 bg-blue-500 rounded-full"></span>
+            )}
           </button>
         );
       })}
     </div>
   </div>
 </div>
+
 
 
       {/* Main Content */}

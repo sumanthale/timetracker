@@ -87,31 +87,38 @@ function App() {
       </header>
 
       {/* Enhanced Tab Navigation */}
-      <div className="bg-white border-b border-gray-100 sticky top-0 z-40">
-        <div className="max-w-md mx-auto px-6">
-          <div className="flex">
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() =>
-                    setActiveTab(tab.id as "dashboard" | "history")
-                  }
-                  className={`flex-1 flex items-center justify-center py-4 text-sm font-semibold border-b-3 transition-all duration-300 ${
-                    activeTab === tab.id
-                      ? "border-blue-500 text-blue-600 bg-blue-50"
-                      : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50"
-                  }`}
-                >
-                  <Icon className="w-5 h-5 mr-2" />
-                  {tab.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
+<div className="bg-white sticky top-0 z-40 shadow-sm">
+  <div className="max-w-md mx-auto px-4">
+    <div className="flex overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
+      {tabs.map((tab) => {
+        const Icon = tab.icon;
+        const isActive = activeTab === tab.id;
+        return (
+          <button
+            key={tab.id}
+            onClick={() =>
+              setActiveTab(tab.id as "dashboard" | "history")
+            }
+            className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-all duration-300 ease-in-out
+              ${
+                isActive
+                  ? "bg-white text-blue-600 shadow-inner"
+                  : "text-gray-500 hover:bg-white hover:text-blue-500"
+              }`}
+          >
+            <Icon
+              className={`w-5 h-5 transition-transform duration-200 ${
+                isActive ? "scale-110 text-blue-600" : "text-gray-400"
+              }`}
+            />
+            <span>{tab.label}</span>
+          </button>
+        );
+      })}
+    </div>
+  </div>
+</div>
+
 
       {/* Main Content */}
       <div className="max-w-md mx-auto px-6 py-8">

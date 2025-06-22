@@ -64,32 +64,57 @@ function App() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
-      {/* Enhanced Header */}
-      <header className="sticky top-0 z-50 w-full border-b bg-card/80 backdrop-blur-md">
-        <div className="px-4 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="flex items-center justify-center w-10 h-10 bg-primary rounded-2xl shadow-lg">
-                <Clock className="w-5 h-5 text-primary-foreground" />
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50">
+      {/* Modern Header */}
+      <header className="sticky top-0 z-50 w-full backdrop-blur-xl bg-white/80 border-b border-gray-200/50 shadow-sm">
+        <div className="px-6 py-4">
+          <div className="flex items-center justify-between max-w-md mx-auto">
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <div className="w-11 h-11 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
+                  <Clock className="w-6 h-6 text-white" />
+                </div>
+                <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-white"></div>
               </div>
               <div>
-                <h1 className="text-xl font-bold text-foreground">
-                  TimeTracker
+                <h1 className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+                  TimeTracker Pro
                 </h1>
-                <p className="text-xs text-muted-foreground">
-                  Track your productivity
+                <p className="text-xs text-gray-500 font-medium">
+                  Smart productivity tracking
                 </p>
+              </div>
+            </div>
+            
+            {/* Header Stats */}
+            <div className="text-right">
+              <div className="text-sm font-bold text-gray-900">
+                {new Date().toLocaleDateString('en-US', { 
+                  month: 'short', 
+                  day: 'numeric' 
+                })}
+              </div>
+              <div className="text-xs text-gray-500">
+                {new Date().toLocaleDateString('en-US', { weekday: 'short' })}
               </div>
             </div>
           </div>
         </div>
       </header>
 
-      {/* Enhanced Tab Navigation */}
-      <div className="fixed w-full bottom-0 z-40  backdrop-blur-md py-3">
-        <div className="max-w-md mx-auto px-4">
-          <div className="flex overflow-hidden rounded-sm border border-gray-200 bg-gray-100">
+      {/* Main Content */}
+      <div className="max-w-md mx-auto px-6 py-6">
+        {activeTab === "dashboard" ? (
+          <Dashboard onSessionSubmit={handleSessionSubmit} />
+        ) : (
+          <PastSessions sessions={sessions} />
+        )}
+      </div>
+
+      {/* Modern Bottom Navigation */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t border-gray-200/50 shadow-2xl">
+        <div className="max-w-md mx-auto px-6 py-3">
+          <div className="flex bg-gray-100 rounded-2xl p-1 shadow-inner">
             {tabs.map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
@@ -100,33 +125,30 @@ function App() {
                   onClick={() =>
                     setActiveTab(tab.id as "dashboard" | "history")
                   }
-                  className={`flex-1 relative flex items-center justify-center gap-2 py-3 text-sm font-semibold transition-all duration-300
-              ${
-                isActive
-                  ? "bg-white text-blue-600 font-bold shadow-md z-10"
-                  : "text-gray-500 hover:text-blue-500 hover:bg-white opacity-70"
-              }`}
+                  className={`flex-1 relative flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-semibold transition-all duration-300 ${
+                    isActive
+                      ? "bg-white text-blue-600 shadow-lg shadow-blue-500/20 scale-105"
+                      : "text-gray-500 hover:text-blue-500 hover:bg-white/50"
+                  }`}
                 >
                   <Icon
-                    className={`w-4 h-4 transition-transform duration-200 ${
-                      isActive ? "scale-110 text-blue-600" : "text-gray-400"
+                    className={`w-4 h-4 transition-all duration-200 ${
+                      isActive ? "text-blue-600 scale-110" : "text-gray-400"
                     }`}
                   />
-                  <span>{tab.label}</span>
+                  <span className={isActive ? "font-bold" : "font-medium"}>
+                    {tab.label}
+                  </span>
+                  
+                  {/* Active indicator */}
+                  {isActive && (
+                    <div className="absolute -top-0.5 left-1/2 transform -translate-x-1/2 w-8 h-1 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"></div>
+                  )}
                 </button>
               );
             })}
           </div>
         </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="max-w-md mx-auto px-6 py-8">
-        {activeTab === "dashboard" ? (
-          <Dashboard onSessionSubmit={handleSessionSubmit} />
-        ) : (
-          <PastSessions sessions={sessions} />
-        )}
       </div>
     </div>
   );

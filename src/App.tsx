@@ -87,41 +87,38 @@ function App() {
       </header>
 
       {/* Enhanced Tab Navigation */}
-<div className="sticky top-18 z-40 bg-white py-3">
-  <div className="max-w-md mx-auto px-4">
-    <div className="flex overflow-hidden rounded-xl border border-gray-200 bg-gray-100">
-      {tabs.map((tab) => {
-        const Icon = tab.icon;
-        const isActive = activeTab === tab.id;
+      <div className="fixed w-full bottom-0 z-40  backdrop-blur-md py-3">
+        <div className="max-w-md mx-auto px-4">
+          <div className="flex overflow-hidden rounded-sm border border-gray-200 bg-gray-100">
+            {tabs.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
 
-        return (
-          <button
-            key={tab.id}
-            onClick={() =>
-              setActiveTab(tab.id as "dashboard" | "history")
-            }
-            className={`flex-1 relative flex items-center justify-center gap-2 py-3 text-sm font-semibold transition-all duration-300
-              ${isActive
-                ? "bg-white text-blue-600 font-bold shadow-md z-10"
-                : "text-gray-500 hover:text-blue-500 hover:bg-white opacity-70"
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() =>
+                    setActiveTab(tab.id as "dashboard" | "history")
+                  }
+                  className={`flex-1 relative flex items-center justify-center gap-2 py-3 text-sm font-semibold transition-all duration-300
+              ${
+                isActive
+                  ? "bg-white text-blue-600 font-bold shadow-md z-10"
+                  : "text-gray-500 hover:text-blue-500 hover:bg-white opacity-70"
               }`}
-          >
-            <Icon
-              className={`w-5 h-5 transition-transform duration-200 ${
-                isActive ? "scale-110 text-blue-600" : "text-gray-400"
-              }`}
-            />
-            <span>{tab.label}</span>
-
-        
-          </button>
-        );
-      })}
-    </div>
-  </div>
-</div>
-
-
+                >
+                  <Icon
+                    className={`w-4 h-4 transition-transform duration-200 ${
+                      isActive ? "scale-110 text-blue-600" : "text-gray-400"
+                    }`}
+                  />
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
 
       {/* Main Content */}
       <div className="max-w-md mx-auto px-6 py-8">

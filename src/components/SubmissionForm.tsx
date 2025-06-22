@@ -33,12 +33,12 @@ const SubmissionForm: React.FC<SubmissionFormProps> = ({ session, onSubmit, onCa
       <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full max-h-[95vh] overflow-y-auto">
         <div className="p-8">
           {/* Header */}
-          <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4">
-              <CheckCircle className="w-8 h-8 text-white" />
+         <div className="text-center mb-6">
+            <div className="w-14 h-14 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-3">
+              <CheckCircle className="w-7 h-7 text-white" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Submit Work Summary</h2>
-            <p className="text-gray-600">Review your session before submission</p>
+            <h2 className="text-xl font-semibold text-gray-900">Submit Work Summary</h2>
+            <p className="text-sm text-gray-500">Review your work session before final submission.</p>
           </div>
 
           {/* Session Summary */}
@@ -105,31 +105,27 @@ const SubmissionForm: React.FC<SubmissionFormProps> = ({ session, onSubmit, onCa
             </div>
 
             {/* Comment Section for < 8 hours */}
-            {needsComment && (
-              <div className="bg-amber-50 border-2 border-amber-200 rounded-2xl p-6">
-                <div className="flex items-center mb-4">
-                  <AlertTriangle className="w-6 h-6 text-amber-500 mr-3" />
+           {needsComment && (
+              <div className="bg-amber-50 border-2 border-amber-200 rounded-2xl p-4">
+                <div className="flex items-center mb-3">
+                  <AlertTriangle className="w-5 h-5 text-amber-500 mr-2" />
                   <div>
-                    <h4 className="font-bold text-amber-800">Explanation Required</h4>
-                    <p className="text-sm text-amber-700">Please provide a reason for working less than 8 hours</p>
+                    <p className="text-sm font-semibold text-amber-800">Explanation Required</p>
+                    <p className="text-xs text-amber-700">Less than 8 hours — please provide a reason</p>
                   </div>
                 </div>
                 <textarea
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
-                  placeholder="e.g., Doctor appointment, family emergency, sick leave..."
-                  className="w-full p-4 border-2 border-amber-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent resize-none transition-all duration-200"
-                  rows={4}
-                  maxLength={500}
+                  placeholder="e.g., Health issue, urgent errand..."
+                  className="w-full rounded-xl border-2 border-amber-200 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none transition"
+                  rows={3}
+                  maxLength={300}
                 />
-                <div className="flex justify-between items-center mt-2">
-                  <div className="text-xs text-amber-600">
-                    {comment.length}/500 characters
-                  </div>
-                  {comment.length < 10 && (
-                    <div className="text-xs text-amber-700 font-medium">
-                      Please provide more details
-                    </div>
+                <div className="flex justify-between items-center mt-2 text-xs text-amber-600">
+                  <span>{comment.length}/300</span>
+                  {comment.trim().length < 10 && (
+                    <span className="text-amber-700 font-medium">More details required</span>
                   )}
                 </div>
               </div>
@@ -137,27 +133,27 @@ const SubmissionForm: React.FC<SubmissionFormProps> = ({ session, onSubmit, onCa
           </div>
 
           {/* Action Buttons */}
-          <div className="flex space-x-4">
+           <div className="flex flex-col sm:flex-row gap-3 pt-2">
             <button
               onClick={onCancel}
-              className="flex-1 px-6 py-4 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all duration-200 font-semibold"
               disabled={isSubmitting}
+              className="flex-1 px-5 py-3 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-xl text-sm font-semibold transition"
             >
               Continue Working
             </button>
             <button
               onClick={handleSubmit}
               disabled={isSubmitting || (needsComment && comment.trim().length < 10)}
-              className="flex-1 px-6 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center font-semibold shadow-lg hover:shadow-xl"
+              className="flex-1 px-5 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl text-sm font-semibold flex justify-center items-center hover:from-blue-700 hover:to-purple-700 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed transition shadow"
             >
               {isSubmitting ? (
                 <div className="flex items-center">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2" />
+                  <div className="w-4 h-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
                   Submitting...
                 </div>
               ) : (
                 <>
-                  <Send className="w-5 h-5 mr-2" />
+                  <Send className="w-4 h-4 mr-2" />
                   Submit Session
                 </>
               )}

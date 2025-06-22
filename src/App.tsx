@@ -113,10 +113,7 @@ function App() {
             />
             <span>{tab.label}</span>
 
-            {/* Highlight indicator under active tab */}
-            {isActive && (
-              <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-1 w-1/2 bg-blue-500 rounded-full"></span>
-            )}
+        
           </button>
         );
       })}

@@ -87,7 +87,7 @@ function App() {
       </header>
 
       {/* Enhanced Tab Navigation */}
-<div className="sticky top-17 z-40 bg-white py-3">
+<div className="sticky top-18 z-40 bg-white py-3">
   <div className="max-w-md mx-auto px-4">
     <div className="flex overflow-hidden rounded-xl border border-gray-200 bg-gray-100">
       {tabs.map((tab) => {

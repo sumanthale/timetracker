@@ -8,12 +8,20 @@ import {
   Zap,
   Target,
   TrendingUp,
+  CheckCircle,
+  Trash2,
+  Calendar,
+  Clock,
 } from "lucide-react";
 import { TimeSession, IdleEvent } from "../types";
 import { useTimer } from "../hooks/useTimer";
+import { useAuth } from "../contexts/AuthContext";
+import { FirebaseService } from "../services/firebaseService";
 import {
   generateDummyScreenshots,
   calculateProductiveHours,
+  formatDate,
+  formatTime,
 } from "../utils/timeUtils";
 import Timer from "./Timer";
 import IdleTracker from "./IdleTracker";
@@ -25,16 +33,36 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ onSessionSubmit }) => {
+  const { currentUser } = useAuth();
   const [isWorking, setIsWorking] = useState(false);
-  const [currentSession, setCurrentSession] = useState<TimeSession | null>(
-    null
-  );
+  const [currentSession, setCurrentSession] = useState<TimeSession | null>(null);
+  const [todaySession, setTodaySession] = useState<TimeSession | null>(null);
   const [idleEvents, setIdleEvents] = useState<IdleEvent[]>([]);
   const [screenshots, setScreenshots] = useState<string[]>([]);
   const [showSubmissionForm, setShowSubmissionForm] = useState(false);
   const [totalIdleMinutes, setTotalIdleMinutes] = useState(0);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [checkingTodaySession, setCheckingTodaySession] = useState(true);
 
   const { seconds, reset } = useTimer(isWorking);
+
+  // Check if user has already submitted today's session
+  useEffect(() => {
+    const checkTodaySession = async () => {
+      if (!currentUser) return;
+
+      try {
+        const session = await FirebaseService.getTodaySession(currentUser.uid);
+        setTodaySession(session);
+      } catch (error) {
+        console.error('Error checking today session:', error);
+      } finally {
+        setCheckingTodaySession(false);
+      }
+    };
+
+    checkTodaySession();
+  }, [currentUser]);
 
   // Simulate idle time detection
   useEffect(() => {
@@ -117,8 +145,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onSessionSubmit }) => {
     setShowSubmissionForm(true);
   };
 
-  const handleSubmit = (comment?: string) => {
-    if (!currentSession) return;
+  const handleSubmit = async (comment?: string) => {
+    if (!currentSession || !currentUser) return;
 
     const finalSession: TimeSession = {
       ...currentSession,
@@ -127,18 +155,37 @@ const Dashboard: React.FC<DashboardProps> = ({ onSessionSubmit }) => {
       lessHoursComment: comment,
     };
 
-    onSessionSubmit(finalSession);
-    setCurrentSession(null);
-    setShowSubmissionForm(false);
-    setIdleEvents([]);
-    setScreenshots([]);
-    setTotalIdleMinutes(0);
-    reset();
+    try {
+      await onSessionSubmit(finalSession);
+      setTodaySession(finalSession);
+      setCurrentSession(null);
+      setShowSubmissionForm(false);
+      setIdleEvents([]);
+      setScreenshots([]);
+      setTotalIdleMinutes(0);
+      reset();
+    } catch (error) {
+      console.error('Error submitting session:', error);
+    }
   };
 
   const handleCancelSubmission = () => {
     setShowSubmissionForm(false);
     setIsWorking(true);
+  };
+
+  const handleDeleteTodaySession = async () => {
+    if (!todaySession || !currentUser) return;
+
+    setIsDeleting(true);
+    try {
+      await FirebaseService.deleteSession(todaySession.id);
+      setTodaySession(null);
+    } catch (error) {
+      console.error('Error deleting session:', error);
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const currentProductiveHours = calculateProductiveHours(
@@ -149,6 +196,189 @@ const Dashboard: React.FC<DashboardProps> = ({ onSessionSubmit }) => {
     seconds > 0
       ? Math.round(((seconds - totalIdleMinutes * 60) / seconds) * 100)
       : 100;
+
+  // Show loading while checking today's session
+  if (checkingTodaySession) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Checking today's productivity...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show today's session summary if already submitted
+  if (todaySession) {
+    return (
+      <div className="space-y-6 pb-20">
+        {/* Today's Session Completed */}
+        <div className="bg-gradient-to-br from-green-50 to-emerald-100 rounded-3xl shadow-lg border border-green-200 overflow-hidden">
+          <div className="p-8 text-center">
+            <div className="w-20 h-20 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl">
+              <CheckCircle className="w-10 h-10 text-white" />
+            </div>
+            
+            <h2 className="text-2xl font-bold text-green-900 mb-2">
+              Today's Productivity Logged!
+            </h2>
+            <p className="text-green-700 mb-6">
+              You've successfully submitted your work session for today.
+            </p>
+
+            {/* Session Summary */}
+            <div className="bg-white/70 rounded-2xl p-6 mb-6">
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div className="text-center">
+                  <div className="text-sm text-gray-600 mb-1">Date</div>
+                  <div className="font-semibold text-gray-900">
+                    {formatDate(new Date(todaySession.date))}
+                  </div>
+                </div>
+                <div className="text-center">
+                  <div className="text-sm text-gray-600 mb-1">Status</div>
+                  <div className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
+                    todaySession.approvalStatus === 'approved' 
+                      ? 'bg-green-100 text-green-800'
+                      : todaySession.approvalStatus === 'rejected'
+                      ? 'bg-red-100 text-red-800'
+                      : 'bg-amber-100 text-amber-800'
+                  }`}>
+                    {todaySession.approvalStatus === 'approved' && '✓ Approved'}
+                    {todaySession.approvalStatus === 'rejected' && '✗ Rejected'}
+                    {todaySession.approvalStatus === 'pending' && '⏳ Pending'}
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-600">
+                    {formatTime(todaySession.totalMinutes)}
+                  </div>
+                  <div className="text-xs text-gray-600">Total Time</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-600">
+                    {todaySession.productiveHours.toFixed(1)}h
+                  </div>
+                  <div className="text-xs text-gray-600">Productive</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-purple-600">
+                    {todaySession.screenshots.length}
+                  </div>
+                  <div className="text-xs text-gray-600">Screenshots</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Work Times */}
+            <div className="bg-white/70 rounded-2xl p-4 mb-6">
+              <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-blue-500" />
+                  <span className="text-gray-600">Clock In:</span>
+                  <span className="font-semibold">
+                    {new Date(todaySession.clockIn).toLocaleTimeString('en-US', { 
+                      hour: '2-digit', 
+                      minute: '2-digit' 
+                    })}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-red-500" />
+                  <span className="text-gray-600">Clock Out:</span>
+                  <span className="font-semibold">
+                    {todaySession.clockOut ? new Date(todaySession.clockOut).toLocaleTimeString('en-US', { 
+                      hour: '2-digit', 
+                      minute: '2-digit' 
+                    }) : 'N/A'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Comment if exists */}
+            {todaySession.lessHoursComment && (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 text-left">
+                <div className="text-sm font-semibold text-amber-800 mb-2">Your Note:</div>
+                <p className="text-sm text-amber-700">{todaySession.lessHoursComment}</p>
+              </div>
+            )}
+
+            {/* Action Button */}
+            <button
+              onClick={handleDeleteTodaySession}
+              disabled={isDeleting}
+              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-xl hover:from-red-600 hover:to-pink-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-lg hover:shadow-xl font-semibold"
+            >
+              {isDeleting ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="w-4 h-4" />
+                  Delete & Create New
+                </>
+              )}
+            </button>
+            
+            <p className="text-xs text-gray-500 mt-3">
+              Delete this session to create a new one for today
+            </p>
+          </div>
+        </div>
+
+        {/* Quick Stats */}
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <Calendar className="w-5 h-5 text-blue-500" />
+            Today's Summary
+          </h3>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-xl p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-2xl font-bold text-blue-900">
+                    {todaySession.productiveHours >= 8 ? '✅' : '⚠️'}
+                  </div>
+                  <div className="text-sm text-blue-700">
+                    {todaySession.productiveHours >= 8 ? 'Full Day' : 'Partial Day'}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-xl font-bold text-blue-900">
+                    {todaySession.productiveHours.toFixed(1)}h
+                  </div>
+                  <div className="text-xs text-blue-600">of 8h goal</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-br from-purple-50 to-pink-100 rounded-xl p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-2xl font-bold text-purple-900">📸</div>
+                  <div className="text-sm text-purple-700">Screenshots</div>
+                </div>
+                <div className="text-right">
+                  <div className="text-xl font-bold text-purple-900">
+                    {todaySession.screenshots.length}
+                  </div>
+                  <div className="text-xs text-purple-600">captured</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 pb-20">
@@ -204,8 +434,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onSessionSubmit }) => {
           </div>
         )}
       </div>
-
-      {/* Modern Control Button */}
 
       {/* Enhanced Stats Dashboard */}
       {isWorking && (
@@ -380,6 +608,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onSessionSubmit }) => {
 };
 
 export default Dashboard;
+
 const MiniStat = ({
   icon,
   value,

@@ -1,62 +1,82 @@
-import React, { useState } from "react";
-import { Clock, History, User, Calendar, Bell } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Clock, History, User, Calendar, LogOut } from "lucide-react";
 import { TimeSession } from "./types";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { FirebaseService } from "./services/firebaseService";
+import AuthWrapper from "./components/auth/AuthWrapper";
 import Dashboard from "./components/Dashboard";
 import PastSessions from "./components/PastSessions";
 
-function App() {
+function AppContent() {
+  const { currentUser, userProfile, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<"dashboard" | "history">(
     "dashboard"
   );
-  const [sessions, setSessions] = useState<TimeSession[]>([
-    // Add some dummy data for demonstration
-    {
-      id: "1",
-      date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-      clockIn: new Date(
-        Date.now() - 2 * 24 * 60 * 60 * 1000 + 9 * 60 * 60 * 1000
-      ).toISOString(),
-      clockOut: new Date(
-        Date.now() - 2 * 24 * 60 * 60 * 1000 + 17 * 60 * 60 * 1000
-      ).toISOString(),
-      totalMinutes: 480,
-      idleMinutes: 45,
-      productiveHours: 7.25,
-      screenshots: Array.from(
-        { length: 12 },
-        (_, i) => `https://picsum.photos/400/300?random=${i + 100}`
-      ),
-      status: "submitted",
-      approvalStatus: "approved",
-      lessHoursComment: "Had a doctor appointment in the afternoon",
-      approvalComment: "Thanks for letting us know. Hope everything is okay!",
-      approvedBy: "Sarah Johnson",
-      approvedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-    },
-    {
-      id: "2",
-      date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-      clockIn: new Date(
-        Date.now() - 1 * 24 * 60 * 60 * 1000 + 8.5 * 60 * 60 * 1000
-      ).toISOString(),
-      clockOut: new Date(
-        Date.now() - 1 * 24 * 60 * 60 * 1000 + 17.5 * 60 * 60 * 1000
-      ).toISOString(),
-      totalMinutes: 540,
-      idleMinutes: 30,
-      productiveHours: 8.5,
-      screenshots: Array.from(
-        { length: 18 },
-        (_, i) => `https://picsum.photos/400/300?random=${i + 200}`
-      ),
-      status: "submitted",
-      approvalStatus: "pending",
-    },
-  ]);
+  const [sessions, setSessions] = useState<TimeSession[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const handleSessionSubmit = (session: TimeSession) => {
-    setSessions((prev) => [...prev, session]);
+  // Load user sessions from Firebase
+  useEffect(() => {
+    const loadSessions = async () => {
+      if (currentUser) {
+        try {
+          const userSessions = await FirebaseService.getUserSessions(
+            currentUser.uid
+          );
+          setSessions(userSessions);
+        } catch (error) {
+          console.error("Error loading sessions:", error);
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadSessions();
+  }, [currentUser]);
+
+  const handleSessionSubmit = async (session: TimeSession) => {
+    if (!currentUser) return;
+
+    try {
+      const sessionId = await FirebaseService.saveSession(
+        currentUser.uid,
+        session
+      );
+      const sessionWithId = { ...session, id: sessionId };
+      setSessions((prev) => [sessionWithId, ...prev]);
+    } catch (error) {
+      console.error("Error saving session:", error);
+      throw error; // Re-throw to handle in Dashboard
+    }
   };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error("Error logging out:", error);
+    }
+  };
+
+  // Show auth screens if user is not authenticated
+  if (!currentUser) {
+    return <AuthWrapper />;
+  }
+
+  // Show loading while fetching user data
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <Clock className="w-8 h-8 text-white animate-pulse" />
+          </div>
+          <p className="text-gray-600">Loading your workspace...</p>
+        </div>
+      </div>
+    );
+  }
 
   const tabs = [
     { id: "dashboard", label: "Dashboard", icon: Clock },
@@ -65,77 +85,58 @@ function App() {
 
   // Get current date and time info
   const now = new Date();
-  const userName = "Alex Johnson"; // This would come from your auth system
-  const currentHour = now.getHours();
-
-  const getGreeting = () => {
-    if (currentHour < 12) return "Good morning";
-    if (currentHour < 17) return "Good afternoon";
-    return "Good evening";
-  };
-
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString("en-US", {
-      weekday: "long",
-      month: "long",
-      day: "numeric",
-      year: "numeric",
-    });
-  };
-
-  const formatTime = (date: Date) => {
-    return date.toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-    });
-  };
+  const userName = userProfile?.fullName || currentUser.displayName || "User";
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50">
-      {/* Enhanced Modern Header */}
-      <header className="sticky top-0 z-50 w-full backdrop-blur-xl bg-white/85 border-b border-gray-200/50 shadow-lg">
-        <div className="px-6 py-5">
-          <div className="flex items-center justify-between max-w-md mx-auto">
-            {/* Left: Logo and App Info */}
-            <div className="flex items-center gap-4">
-              <div className="relative">
-                <div className="w-12 h-12 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 rounded-2xl flex items-center justify-center shadow-xl">
-                  <Clock className="w-6 h-6 text-white" />
-                </div>
+      <header className="sticky top-0 z-50 w-full backdrop-blur-md bg-white/80 border-b border-gray-200/60 shadow-sm">
+        <div className="max-w-md mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            {/* Left: Logo & Date */}
+            <div className="flex items-center gap-3">
+              {/* App Icon */}
+              <div className="w-7 h-7 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-md">
+                <Clock className="w-4 h-4 text-white" />
               </div>
-              <div>
-                <h1 className="text-xl font-bold bg-gradient-to-r from-gray-900 via-blue-900 to-purple-900 bg-clip-text text-transparent">
+
+              {/* App Info */}
+              <div className="leading-tight">
+                <h1 className="text-sm font-semibold bg-gradient-to-r from-gray-900 via-blue-900 to-purple-900 bg-clip-text text-transparent">
                   TimeTracker
                 </h1>
-                <p className="text-xs text-gray-500 font-medium">
-                  Smart productivity tracking
-                </p>
+                <div className="flex items-center gap-1 text-xs text-gray-500 mt-0.5">
+                  <Calendar className="w-3.5 h-3.5" />
+                  <span>
+                    {now.toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      weekday: "short",
+                    })}
+                  </span>
+                </div>
               </div>
             </div>
 
-            {/* Right: User Greeting and Date */}
-            <div className="text-right">
-              <div className="flex items-center gap-2 mb-1">
-                <div className="w-6 h-6 bg-gradient-to-r from-emerald-500 to-blue-500 rounded-full flex items-center justify-center">
-                  <User className="w-3 h-3 text-white" />
+            {/* Right: Greeting & Actions */}
+            <div className="flex items-center gap-3">
+              {/* Greeting */}
+              <div className="flex items-center gap-2 text-sm text-gray-800 font-medium">
+                <div className="w-6 h-6 bg-gradient-to-r from-emerald-500 to-blue-500 rounded-full flex items-center justify-center shadow-sm">
+                  <User className="w-3.5 h-3.5 text-white" />
                 </div>
-                <div className="text-sm font-bold text-gray-900">
-                  {getGreeting()}, {userName.split(" ")[0]}!
-                </div>
-              </div>
-              <div className="flex items-center gap-1 text-xs text-gray-600">
-                <Calendar className="w-3 h-3" />
-                <span>
-                  {now.toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                    weekday: "short",
-                  })}
+                <span className="truncate">
+                  Welcome, {userName.split(" ")[0]}!
                 </span>
-                <span className="mx-1">•</span>
-                <span className="font-medium">{formatTime(now)}</span>
               </div>
+
+              {/* Logout */}
+              <button
+                onClick={handleLogout}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                title="Sign Out"
+              >
+                <LogOut className="w-4 h-4 text-gray-500" />
+              </button>
             </div>
           </div>
         </div>
@@ -178,8 +179,6 @@ function App() {
                   <span className={isActive ? "font-bold" : "font-medium"}>
                     {tab.label}
                   </span>
-
-                  {/* Enhanced Active Indicator */}
                 </button>
               );
             })}
@@ -187,6 +186,14 @@ function App() {
         </div>
       </div>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
 

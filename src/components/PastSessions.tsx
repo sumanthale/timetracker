@@ -10,6 +10,15 @@ import {
   Search,
   Eye,
   Camera,
+  ChevronDown,
+  ChevronUp,
+  SortAsc,
+  SortDesc,
+  Activity,
+  User,
+  FileText,
+  TrendingUp,
+  MoreHorizontal,
 } from "lucide-react";
 import { TimeSession, HistoryFilters } from "../types";
 import { formatDate, formatTime } from "../utils/timeUtils";
@@ -19,6 +28,9 @@ interface PastSessionsProps {
   sessions: TimeSession[];
 }
 
+type SortField = "date" | "hours" | "status";
+type SortOrder = "asc" | "desc";
+
 const PastSessions: React.FC<PastSessionsProps> = ({ sessions }) => {
   const [filters, setFilters] = useState<HistoryFilters>({
     status: "all",
@@ -26,11 +38,12 @@ const PastSessions: React.FC<PastSessionsProps> = ({ sessions }) => {
     hoursRange: "all",
   });
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedSession, setSelectedSession] = useState<TimeSession | null>(
-    null
-  );
+  const [expandedSession, setExpandedSession] = useState<string | null>(null);
+  const [sortField, setSortField] = useState<SortField>("date");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
+  const [showFilters, setShowFilters] = useState(false);
 
-  // Add some dummy approval data to sessions
+  // Enhanced sessions with dummy approval data
   const enhancedSessions = useMemo(() => {
     return sessions.map((session) => ({
       ...session,
@@ -54,13 +67,11 @@ const PastSessions: React.FC<PastSessionsProps> = ({ sessions }) => {
     }));
   }, [sessions]);
 
-  const filteredSessions = useMemo(() => {
-    return enhancedSessions.filter((session) => {
+  // Filtered and sorted sessions
+  const filteredAndSortedSessions = useMemo(() => {
+    let filtered = enhancedSessions.filter((session) => {
       // Status filter
-      if (
-        filters.status !== "all" &&
-        session.approvalStatus !== filters.status
-      ) {
+      if (filters.status !== "all" && session.approvalStatus !== filters.status) {
         return false;
       }
 
@@ -95,325 +106,415 @@ const PastSessions: React.FC<PastSessionsProps> = ({ sessions }) => {
 
       return true;
     });
-  }, [enhancedSessions, filters, searchTerm]);
 
+    // Sort sessions
+    filtered.sort((a, b) => {
+      let comparison = 0;
+      
+      switch (sortField) {
+        case "date":
+          comparison = new Date(a.date).getTime() - new Date(b.date).getTime();
+          break;
+        case "hours":
+          comparison = a.productiveHours - b.productiveHours;
+          break;
+        case "status":
+          const statusOrder = { approved: 3, pending: 2, rejected: 1 };
+          comparison = statusOrder[a.approvalStatus!] - statusOrder[b.approvalStatus!];
+          break;
+      }
 
-  const getStatusBadge = (status: string) => {
-    const base = "px-2 py-0.5 text-xs rounded-full font-semibold";
-    switch (status) {
-      case "approved":
-        return `${base} bg-green-100 text-green-700`;
-      case "rejected":
-        return `${base} bg-red-100 text-red-700`;
-      default:
-        return `${base} bg-yellow-100 text-yellow-700`;
+      return sortOrder === "asc" ? comparison : -comparison;
+    });
+
+    return filtered;
+  }, [enhancedSessions, filters, searchTerm, sortField, sortOrder]);
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortOrder("desc");
     }
   };
 
-  const getStatusIcon = (status: string) => {
-    const size = "w-4 h-4 mr-2";
+  const getStatusConfig = (status: string) => {
     switch (status) {
       case "approved":
-        return <CheckCircle className={`${size} text-green-500`} />;
+        return {
+          badge: "bg-emerald-100 text-emerald-700 border-emerald-200",
+          icon: <CheckCircle className="w-3 h-3" />,
+          text: "Approved",
+          dot: "bg-emerald-500"
+        };
       case "rejected":
-        return <XCircle className={`${size} text-red-500`} />;
+        return {
+          badge: "bg-red-100 text-red-700 border-red-200",
+          icon: <XCircle className="w-3 h-3" />,
+          text: "Rejected",
+          dot: "bg-red-500"
+        };
       default:
-        return <AlertCircle className={`${size} text-yellow-500`} />;
+        return {
+          badge: "bg-amber-100 text-amber-700 border-amber-200",
+          icon: <AlertCircle className="w-3 h-3" />,
+          text: "Pending",
+          dot: "bg-amber-500"
+        };
     }
   };
+
+  const clearAllFilters = () => {
+    setSearchTerm("");
+    setFilters({
+      status: "all",
+      dateRange: "all",
+      hoursRange: "all",
+    });
+  };
+
+  const hasActiveFilters = searchTerm || 
+    filters.status !== "all" || 
+    filters.dateRange !== "all" || 
+    filters.hoursRange !== "all";
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-       <div className="flex items-center gap-4">
-        <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center">
-          <Calendar className="w-6 h-6 text-white" />
+    <div className="space-y-6 pb-20">
+      {/* Modern Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
+            <Calendar className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Work History</h1>
+            <p className="text-sm text-gray-500">
+              {filteredAndSortedSessions.length} session{filteredAndSortedSessions.length !== 1 ? 's' : ''} found
+            </p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Work History</h1>
-          <p className="text-gray-500 text-sm">Track and manage your past sessions</p>
-        </div>
+        
+        <button
+          onClick={() => setShowFilters(!showFilters)}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all ${
+            showFilters || hasActiveFilters
+              ? "bg-indigo-50 border-indigo-200 text-indigo-700"
+              : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50"
+          }`}
+        >
+          <Filter className="w-4 h-4" />
+          <span className="text-sm font-medium">Filters</span>
+          {hasActiveFilters && (
+            <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
+          )}
+        </button>
       </div>
 
-
-  <div className="bg-white p-6 rounded-xl border shadow-sm space-y-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+      {/* Enhanced Search and Filters */}
+      <div className={`bg-white rounded-2xl border border-gray-100 shadow-sm transition-all duration-300 ${
+        showFilters ? "p-6" : "p-4"
+      }`}>
+        {/* Search Bar */}
+        <div className="relative mb-4">
+          <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
-            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring focus:ring-blue-200"
             type="text"
-            placeholder="Search sessions..."
+            placeholder="Search sessions, comments, or dates..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
           />
         </div>
 
-        <div className="flex flex-wrap gap-3 items-center">
-          <Filter className="w-4 h-4 text-gray-400" />
-          <select
-            value={filters.status}
-            onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value as any }))}
-            className="text-sm px-3 py-2 rounded-md border border-gray-200"
-          >
-            <option value="all">All Status</option>
-            <option value="approved">Approved</option>
-            <option value="rejected">Rejected</option>
-            <option value="pending">Pending</option>
-          </select>
-          <select
-            value={filters.dateRange}
-            onChange={(e) => setFilters((f) => ({ ...f, dateRange: e.target.value as any }))}
-            className="text-sm px-3 py-2 rounded-md border border-gray-200"
-          >
-            <option value="all">All Time</option>
-            <option value="week">Last Week</option>
-            <option value="month">Last Month</option>
-          </select>
-          <select
-            value={filters.hoursRange}
-            onChange={(e) => setFilters((f) => ({ ...f, hoursRange: e.target.value as any }))}
-            className="text-sm px-3 py-2 rounded-md border border-gray-200"
-          >
-            <option value="all">All Hours</option>
-            <option value="full">8+ Hours</option>
-            <option value="partial">Under 8 Hours</option>
-          </select>
-        </div>
+        {/* Expandable Filters */}
+        {showFilters && (
+          <div className="space-y-4 pt-4 border-t border-gray-100">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">
+                  Status
+                </label>
+                <select
+                  value={filters.status}
+                  onChange={(e) => setFilters(f => ({ ...f, status: e.target.value as any }))}
+                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  <option value="all">All Status</option>
+                  <option value="approved">Approved</option>
+                  <option value="pending">Pending</option>
+                  <option value="rejected">Rejected</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">
+                  Date Range
+                </label>
+                <select
+                  value={filters.dateRange}
+                  onChange={(e) => setFilters(f => ({ ...f, dateRange: e.target.value as any }))}
+                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  <option value="all">All Time</option>
+                  <option value="week">Last Week</option>
+                  <option value="month">Last Month</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">
+                  Hours
+                </label>
+                <select
+                  value={filters.hoursRange}
+                  onChange={(e) => setFilters(f => ({ ...f, hoursRange: e.target.value as any }))}
+                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  <option value="all">All Hours</option>
+                  <option value="full">8+ Hours</option>
+                  <option value="partial">Under 8 Hours</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Sort Options */}
+            <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Sort by:</span>
+                <div className="flex gap-1">
+                  {[
+                    { field: "date" as SortField, label: "Date" },
+                    { field: "hours" as SortField, label: "Hours" },
+                    { field: "status" as SortField, label: "Status" },
+                  ].map(({ field, label }) => (
+                    <button
+                      key={field}
+                      onClick={() => handleSort(field)}
+                      className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                        sortField === field
+                          ? "bg-indigo-100 text-indigo-700"
+                          : "text-gray-600 hover:bg-gray-100"
+                      }`}
+                    >
+                      {label}
+                      {sortField === field && (
+                        sortOrder === "asc" ? <SortAsc className="w-3 h-3" /> : <SortDesc className="w-3 h-3" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {hasActiveFilters && (
+                <button
+                  onClick={clearAllFilters}
+                  className="text-xs font-medium text-indigo-600 hover:text-indigo-700 transition-colors"
+                >
+                  Clear all
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Sessions List */}
-      {filteredSessions.length > 0 ? (
-        <div className="space-y-4">
-          {filteredSessions.map((session) => (
-            <div
-              key={session.id}
-              className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300"
-            >
-              <div className="p-6">
-                {/* Header */}
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center justify-center">
-                    <div className="mr-4">
-                      {getStatusIcon(session.approvalStatus!)}
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-medium text-gray-900">
-                        {dayjs(session.date).format(" ddd, MMM DD")}
-                      </h3>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div
-                      className={`text-2xl font-bold ${
-                        session.productiveHours >= 8
-                          ? "text-green-600"
-                          : "text-amber-600"
-                      }`}
-                    >
-                      {session.productiveHours.toFixed(1)}h
-                    </div>
-
-                    <div className="text-xs text-gray-500">
-                      <span className={getStatusBadge(session.approvalStatus!) + 
-                        "  text-[10px] font-semibold -mr-2"
-                      }>
-                        {session.approvalStatus?.toUpperCase()}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Time Details */}
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div className="bg-gray-50 rounded-xl p-3">
-                    <div className="flex items-center mb-2">
-                      <Clock className="w-4 h-4 text-green-500 mr-2" />
-                      <span className="text-sm font-medium text-gray-700">
-                        Clock In
-                      </span>
-                    </div>
-                    <div className="text-lg text-center font-bold text-gray-900">
-                      {/* {formatDateTime(new Date(session.clockIn))} */}
-                      {dayjs(session.clockIn).format("hh:mm A")}
-                    </div>
-                  </div>
-                  <div className="bg-gray-50 rounded-xl p-3">
-                    <div className="flex items-center mb-2">
-                      <Clock className="w-4 h-4 text-red-500 mr-2" />
-                      <span className="text-sm font-medium text-gray-700">
-                        Clock Out
-                      </span>
-                    </div>
-                    <div className="text-lg text-center font-bold text-gray-900">
-                      {session.clockOut
-                        ? dayjs(session.clockOut).format("hh:mm A")
-                        : "N/A"}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Stats */}
-                <div className="grid grid-cols-3 gap-3 mb-4">
-                  <div className="text-center p-3 bg-blue-50 rounded-xl">
-                    <div className="text-lg font-bold text-blue-900">
-                      {formatTime(session.totalMinutes)}
-                    </div>
-                    <div className="text-xs text-blue-700">Total Time</div>
-                  </div>
-                  <div className="text-center p-3 bg-amber-50 rounded-xl">
-                    <div className="text-lg font-bold text-amber-900">
-                      {formatTime(session.idleMinutes)}
-                    </div>
-                    <div className="text-xs text-amber-700">Idle Time</div>
-                  </div>
-                  <div className="text-center p-3 bg-purple-50 rounded-xl">
-                    <div className="text-lg font-bold text-purple-900">
-                      {session.screenshots.length}
-                    </div>
-                    <div className="text-xs text-purple-700">Screenshots</div>
-                  </div>
-                </div>
-
-                {/* Comments */}
-                {session.lessHoursComment && (
-                  <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-xl">
-                    <div className="flex items-start">
-                      <MessageCircle className="w-4 h-4 text-amber-500 mr-2 mt-0.5 flex-shrink-0" />
-                      <div>
-                        <div className="text-sm font-semibold text-amber-800 mb-1">
-                          Reason for less than 8 hours:
+      {filteredAndSortedSessions.length > 0 ? (
+        <div className="space-y-3">
+          {filteredAndSortedSessions.map((session) => {
+            const statusConfig = getStatusConfig(session.approvalStatus!);
+            const isExpanded = expandedSession === session.id;
+            
+            return (
+              <div
+                key={session.id}
+                className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden"
+              >
+                {/* Compact Session Card */}
+                <div className="p-5">
+                  <div className="flex items-center justify-between">
+                    {/* Left: Date and Status */}
+                    <div className="flex items-center gap-4">
+                      <div className="flex flex-col">
+                        <div className="text-lg font-semibold text-gray-900">
+                          {dayjs(session.date).format("MMM DD")}
                         </div>
-                        <p className="text-sm text-amber-700">
-                          {session.lessHoursComment}
-                        </p>
+                        <div className="text-xs text-gray-500">
+                          {dayjs(session.date).format("ddd")}
+                        </div>
                       </div>
+                      
+                      <div className="h-8 w-px bg-gray-200"></div>
+                      
+                      <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-medium ${statusConfig.badge}`}>
+                        <div className={`w-2 h-2 rounded-full ${statusConfig.dot}`}></div>
+                        {statusConfig.text}
+                      </div>
+                    </div>
+
+                    {/* Right: Hours and Actions */}
+                    <div className="flex items-center gap-4">
+                      <div className="text-right">
+                        <div className={`text-xl font-bold ${
+                          session.productiveHours >= 8 ? "text-emerald-600" : "text-amber-600"
+                        }`}>
+                          {session.productiveHours.toFixed(1)}h
+                        </div>
+                        <div className="text-xs text-gray-500">productive</div>
+                      </div>
+                      
+                      <button
+                        onClick={() => setExpandedSession(isExpanded ? null : session.id)}
+                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                      >
+                        {isExpanded ? (
+                          <ChevronUp className="w-4 h-4 text-gray-400" />
+                        ) : (
+                          <ChevronDown className="w-4 h-4 text-gray-400" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Quick Stats Row */}
+                  <div className="flex items-center gap-6 mt-4 pt-4 border-t border-gray-50">
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <Clock className="w-4 h-4 text-blue-500" />
+                      <span>{dayjs(session.clockIn).format("HH:mm")} - {session.clockOut ? dayjs(session.clockOut).format("HH:mm") : "Now"}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <Camera className="w-4 h-4 text-purple-500" />
+                      <span>{session.screenshots.length}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <Activity className="w-4 h-4 text-amber-500" />
+                      <span>{formatTime(session.idleMinutes)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Expanded Details */}
+                {isExpanded && (
+                  <div className="border-t border-gray-100 bg-gray-50">
+                    <div className="p-5 space-y-5">
+                      {/* Detailed Stats Grid */}
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="bg-white rounded-xl p-4 text-center border border-gray-100">
+                          <Clock className="w-5 h-5 text-blue-500 mx-auto mb-2" />
+                          <div className="text-lg font-bold text-gray-900">{formatTime(session.totalMinutes)}</div>
+                          <div className="text-xs text-gray-500">Total Time</div>
+                        </div>
+                        <div className="bg-white rounded-xl p-4 text-center border border-gray-100">
+                          <Activity className="w-5 h-5 text-amber-500 mx-auto mb-2" />
+                          <div className="text-lg font-bold text-gray-900">{formatTime(session.idleMinutes)}</div>
+                          <div className="text-xs text-gray-500">Idle Time</div>
+                        </div>
+                        <div className="bg-white rounded-xl p-4 text-center border border-gray-100">
+                          <TrendingUp className="w-5 h-5 text-emerald-500 mx-auto mb-2" />
+                          <div className="text-lg font-bold text-gray-900">{((session.productiveHours / (session.totalMinutes / 60)) * 100).toFixed(0)}%</div>
+                          <div className="text-xs text-gray-500">Efficiency</div>
+                        </div>
+                      </div>
+
+                      {/* Comments Section */}
+                      {(session.lessHoursComment || session.approvalComment) && (
+                        <div className="space-y-3">
+                          {session.lessHoursComment && (
+                            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                              <div className="flex items-start gap-3">
+                                <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                  <FileText className="w-4 h-4 text-amber-600" />
+                                </div>
+                                <div className="flex-1">
+                                  <div className="text-sm font-semibold text-amber-800 mb-1">
+                                    Employee Note
+                                  </div>
+                                  <p className="text-sm text-amber-700">{session.lessHoursComment}</p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {session.approvalComment && (
+                            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                              <div className="flex items-start gap-3">
+                                <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                  <User className="w-4 h-4 text-blue-600" />
+                                </div>
+                                <div className="flex-1">
+                                  <div className="text-sm font-semibold text-blue-800 mb-1">
+                                    Manager Feedback
+                                  </div>
+                                  <p className="text-sm text-blue-700 mb-2">{session.approvalComment}</p>
+                                  <div className="text-xs text-blue-600">
+                                    — {session.approvedBy} • {dayjs(session.approvedAt).format("MMM DD, YYYY")}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Screenshots Preview */}
+                      {session.screenshots.length > 0 && (
+                        <div>
+                          <div className="flex items-center justify-between mb-3">
+                            <h4 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                              <Camera className="w-4 h-4 text-purple-500" />
+                              Screenshots ({session.screenshots.length})
+                            </h4>
+                          </div>
+                          <div className="grid grid-cols-4 gap-2">
+                            {session.screenshots.slice(0, 4).map((screenshot, index) => (
+                              <div key={index} className="relative group">
+                                <img
+                                  src={screenshot}
+                                  alt={`Screenshot ${index + 1}`}
+                                  className="w-full h-16 object-cover rounded-lg border border-gray-200 group-hover:border-purple-300 transition-colors"
+                                />
+                                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all rounded-lg flex items-center justify-center">
+                                  <Eye className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          {session.screenshots.length > 4 && (
+                            <p className="text-xs text-gray-500 mt-2 text-center">
+                              +{session.screenshots.length - 4} more screenshots
+                            </p>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
-
-                {session.approvalComment && (
-                  <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">
-                    <div className="flex items-start">
-                      <MessageCircle className="w-4 h-4 text-blue-500 mr-2 mt-0.5 flex-shrink-0" />
-                      <div>
-                        <div className="text-sm font-semibold text-blue-800 mb-1">
-                          Manager Comment:
-                        </div>
-                        <p className="text-sm text-blue-700">
-                          {session.approvalComment}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Action Button */}
-                <button
-                  onClick={() => setSelectedSession(session)}
-                  className="w-full flex items-center justify-center py-3 px-4 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors text-gray-700 font-medium"
-                >
-                  <Eye className="w-4 h-4 mr-2" />
-                  View Details
-                </button>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       ) : (
         <div className="text-center py-16">
-          <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <Calendar className="w-10 h-10 text-gray-400" />
           </div>
           <h3 className="text-xl font-semibold text-gray-900 mb-2">
             No sessions found
           </h3>
-          <p className="text-gray-500 mb-4">
-            {searchTerm ||
-            filters.status !== "all" ||
-            filters.dateRange !== "all" ||
-            filters.hoursRange !== "all"
-              ? "Try adjusting your filters or search terms"
-              : "Your submitted work sessions will appear here"}
+          <p className="text-gray-500 mb-6 max-w-md mx-auto">
+            {hasActiveFilters
+              ? "No sessions match your current filters. Try adjusting your search criteria."
+              : "Your submitted work sessions will appear here once you complete and submit them."}
           </p>
-          {(searchTerm ||
-            filters.status !== "all" ||
-            filters.dateRange !== "all" ||
-            filters.hoursRange !== "all") && (
+          {hasActiveFilters && (
             <button
-              onClick={() => {
-                setSearchTerm("");
-                setFilters({
-                  status: "all",
-                  dateRange: "all",
-                  hoursRange: "all",
-                });
-              }}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              onClick={clearAllFilters}
+              className="px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors font-medium"
             >
-              Clear Filters
+              Clear All Filters
             </button>
           )}
-        </div>
-      )}
-
-      {/* Session Detail Modal */}
-      {selectedSession && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-bold text-gray-900">
-                  Session Details
-                </h3>
-                <button
-                  onClick={() => setSelectedSession(null)}
-                  className="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors"
-                >
-                  ×
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                <div className="text-center p-4 bg-gray-50 rounded-xl">
-                  <div className="text-2xl font-bold text-gray-900 mb-1">
-                    {formatDate(new Date(selectedSession.date))}
-                  </div>
-                  <div
-                    className={getStatusBadge(selectedSession.approvalStatus!)}
-                  >
-                    {selectedSession.approvalStatus?.toUpperCase()}
-                  </div>
-                </div>
-
-                {/* Screenshots Preview */}
-                {selectedSession.screenshots.length > 0 && (
-                  <div>
-                    <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
-                      <Camera className="w-4 h-4 mr-2" />
-                      Screenshots ({selectedSession.screenshots.length})
-                    </h4>
-                    <div className="grid grid-cols-2 gap-2">
-                      {selectedSession.screenshots
-                        .slice(0, 4)
-                        .map((screenshot, index) => (
-                          <img
-                            key={index}
-                            src={screenshot}
-                            alt={`Screenshot ${index + 1}`}
-                            className="w-full h-20 object-cover rounded-lg border border-gray-200"
-                          />
-                        ))}
-                    </div>
-                    {selectedSession.screenshots.length > 4 && (
-                      <p className="text-sm text-gray-500 mt-2 text-center">
-                        +{selectedSession.screenshots.length - 4} more
-                        screenshots
-                      </p>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
         </div>
       )}
     </div>

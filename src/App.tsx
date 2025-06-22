@@ -67,7 +67,7 @@ function App() {
   const now = new Date();
   const userName = "Alex Johnson"; // This would come from your auth system
   const currentHour = now.getHours();
-  
+
   const getGreeting = () => {
     if (currentHour < 12) return "Good morning";
     if (currentHour < 17) return "Good afternoon";
@@ -75,19 +75,19 @@ function App() {
   };
 
   const formatDate = (date: Date) => {
-    return date.toLocaleDateString('en-US', {
-      weekday: 'long',
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric'
+    return date.toLocaleDateString("en-US", {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      year: "numeric",
     });
   };
 
   const formatTime = (date: Date) => {
-    return date.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true
+    return date.toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
     });
   };
 
@@ -103,18 +103,17 @@ function App() {
                 <div className="w-12 h-12 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 rounded-2xl flex items-center justify-center shadow-xl">
                   <Clock className="w-6 h-6 text-white" />
                 </div>
-                <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-white shadow-sm animate-pulse"></div>
               </div>
               <div>
                 <h1 className="text-xl font-bold bg-gradient-to-r from-gray-900 via-blue-900 to-purple-900 bg-clip-text text-transparent">
-                  TimeTracker Pro
+                  TimeTracker
                 </h1>
                 <p className="text-xs text-gray-500 font-medium">
                   Smart productivity tracking
                 </p>
               </div>
             </div>
-            
+
             {/* Right: User Greeting and Date */}
             <div className="text-right">
               <div className="flex items-center gap-2 mb-1">
@@ -122,50 +121,20 @@ function App() {
                   <User className="w-3 h-3 text-white" />
                 </div>
                 <div className="text-sm font-bold text-gray-900">
-                  {getGreeting()}, {userName.split(' ')[0]}!
+                  {getGreeting()}, {userName.split(" ")[0]}!
                 </div>
               </div>
               <div className="flex items-center gap-1 text-xs text-gray-600">
                 <Calendar className="w-3 h-3" />
-                <span>{now.toLocaleDateString('en-US', { 
-                  month: 'short', 
-                  day: 'numeric',
-                  weekday: 'short'
-                })}</span>
+                <span>
+                  {now.toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    weekday: "short",
+                  })}
+                </span>
                 <span className="mx-1">•</span>
                 <span className="font-medium">{formatTime(now)}</span>
-              </div>
-            </div>
-          </div>
-          
-          {/* Enhanced Date Banner */}
-          <div className="max-w-md mx-auto mt-4">
-            <div className="bg-gradient-to-r from-blue-50 via-purple-50 to-indigo-50 rounded-2xl p-4 border border-blue-100/50 shadow-sm">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-                    <Calendar className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <div className="text-sm font-bold text-gray-900">
-                      {formatDate(now)}
-                    </div>
-                    <div className="text-xs text-gray-600">
-                      Week {Math.ceil(now.getDate() / 7)} • {formatTime(now)}
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Quick Stats or Notifications */}
-                <div className="flex items-center gap-2">
-                  <div className="relative">
-                    <Bell className="w-4 h-4 text-gray-400" />
-                    <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></div>
-                  </div>
-                  <div className="text-xs text-gray-500 bg-white/60 px-2 py-1 rounded-lg">
-                    {sessions.filter(s => s.approvalStatus === 'pending').length} pending
-                  </div>
-                </div>
               </div>
             </div>
           </div>
@@ -184,7 +153,7 @@ function App() {
       {/* Enhanced Bottom Navigation */}
       <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t border-gray-200/50 shadow-2xl">
         <div className="max-w-md mx-auto px-6 py-4">
-          <div className="flex bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl p-1.5 shadow-inner border border-gray-200/50">
+          <div className="flex bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl p-1.5 shadow-inner border border-gray-200/50 gap-3">
             {tabs.map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
@@ -209,14 +178,8 @@ function App() {
                   <span className={isActive ? "font-bold" : "font-medium"}>
                     {tab.label}
                   </span>
-                  
+
                   {/* Enhanced Active Indicator */}
-                  {isActive && (
-                    <>
-                      <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-8 h-1 bg-gradient-to-r from-blue-400 via-purple-400 to-indigo-400 rounded-full shadow-lg"></div>
-                      <div className="absolute inset-0 bg-white/10 rounded-xl"></div>
-                    </>
-                  )}
                 </button>
               );
             })}

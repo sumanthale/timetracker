@@ -1,12 +1,24 @@
-import React, { useState, useEffect } from 'react';
-import { Play, Square, BarChart3, Activity, Camera, Zap, Target, TrendingUp } from 'lucide-react';
-import { TimeSession, IdleEvent } from '../types';
-import { useTimer } from '../hooks/useTimer';
-import { generateDummyScreenshots, calculateProductiveHours } from '../utils/timeUtils';
-import Timer from './Timer';
-import IdleTracker from './IdleTracker';
-import ScreenshotGallery from './ScreenshotGallery';
-import SubmissionForm from './SubmissionForm';
+import React, { useState, useEffect } from "react";
+import {
+  Play,
+  Square,
+  BarChart3,
+  Activity,
+  Camera,
+  Zap,
+  Target,
+  TrendingUp,
+} from "lucide-react";
+import { TimeSession, IdleEvent } from "../types";
+import { useTimer } from "../hooks/useTimer";
+import {
+  generateDummyScreenshots,
+  calculateProductiveHours,
+} from "../utils/timeUtils";
+import Timer from "./Timer";
+import IdleTracker from "./IdleTracker";
+import ScreenshotGallery from "./ScreenshotGallery";
+import SubmissionForm from "./SubmissionForm";
 
 interface DashboardProps {
   onSessionSubmit: (session: TimeSession) => void;
@@ -14,12 +26,14 @@ interface DashboardProps {
 
 const Dashboard: React.FC<DashboardProps> = ({ onSessionSubmit }) => {
   const [isWorking, setIsWorking] = useState(false);
-  const [currentSession, setCurrentSession] = useState<TimeSession | null>(null);
+  const [currentSession, setCurrentSession] = useState<TimeSession | null>(
+    null
+  );
   const [idleEvents, setIdleEvents] = useState<IdleEvent[]>([]);
   const [screenshots, setScreenshots] = useState<string[]>([]);
   const [showSubmissionForm, setShowSubmissionForm] = useState(false);
   const [totalIdleMinutes, setTotalIdleMinutes] = useState(0);
-  
+
   const { seconds, reset } = useTimer(isWorking);
 
   // Simulate idle time detection
@@ -31,13 +45,15 @@ const Dashboard: React.FC<DashboardProps> = ({ onSessionSubmit }) => {
         const idleDuration = Math.floor(Math.random() * 8) + 2;
         const idleEvent: IdleEvent = {
           id: Date.now().toString(),
-          startTime: new Date(Date.now() - idleDuration * 60 * 1000).toISOString(),
+          startTime: new Date(
+            Date.now() - idleDuration * 60 * 1000
+          ).toISOString(),
           endTime: new Date().toISOString(),
-          duration: idleDuration
+          duration: idleDuration,
         };
-        
-        setIdleEvents(prev => [...prev, idleEvent]);
-        setTotalIdleMinutes(prev => prev + idleDuration);
+
+        setIdleEvents((prev) => [...prev, idleEvent]);
+        setTotalIdleMinutes((prev) => prev + idleDuration);
       }
     }, Math.random() * 180000 + 120000);
 
@@ -50,7 +66,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onSessionSubmit }) => {
 
     const screenshotInterval = setInterval(() => {
       const newScreenshot = generateDummyScreenshots(1)[0];
-      setScreenshots(prev => [...prev, newScreenshot]);
+      setScreenshots((prev) => [...prev, newScreenshot]);
     }, 600000);
 
     return () => clearInterval(screenshotInterval);
@@ -66,9 +82,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onSessionSubmit }) => {
       idleMinutes: 0,
       productiveHours: 0,
       screenshots: [],
-      status: 'active'
+      status: "active",
     };
-    
+
     setCurrentSession(session);
     setIsWorking(true);
     setIdleEvents([]);
@@ -82,17 +98,20 @@ const Dashboard: React.FC<DashboardProps> = ({ onSessionSubmit }) => {
 
     const now = new Date();
     const totalMinutes = Math.floor(seconds / 60);
-    const productiveHours = calculateProductiveHours(totalMinutes, totalIdleMinutes);
-    
+    const productiveHours = calculateProductiveHours(
+      totalMinutes,
+      totalIdleMinutes
+    );
+
     const updatedSession: TimeSession = {
       ...currentSession,
       clockOut: now.toISOString(),
       totalMinutes,
       idleMinutes: totalIdleMinutes,
       productiveHours,
-      screenshots
+      screenshots,
     };
-    
+
     setCurrentSession(updatedSession);
     setIsWorking(false);
     setShowSubmissionForm(true);
@@ -103,9 +122,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onSessionSubmit }) => {
 
     const finalSession: TimeSession = {
       ...currentSession,
-      status: 'submitted',
-      approvalStatus: 'pending',
-      lessHoursComment: comment
+      status: "submitted",
+      approvalStatus: "pending",
+      lessHoursComment: comment,
     };
 
     onSessionSubmit(finalSession);
@@ -122,15 +141,59 @@ const Dashboard: React.FC<DashboardProps> = ({ onSessionSubmit }) => {
     setIsWorking(true);
   };
 
-  const currentProductiveHours = calculateProductiveHours(Math.floor(seconds / 60), totalIdleMinutes);
-  const efficiencyPercentage = seconds > 0 ? Math.round(((seconds - totalIdleMinutes * 60) / seconds) * 100) : 100;
+  const currentProductiveHours = calculateProductiveHours(
+    Math.floor(seconds / 60),
+    totalIdleMinutes
+  );
+  const efficiencyPercentage =
+    seconds > 0
+      ? Math.round(((seconds - totalIdleMinutes * 60) / seconds) * 100)
+      : 100;
 
   return (
     <div className="space-y-6 pb-20">
       {/* Enhanced Timer Section */}
       <div className="relative">
         <Timer seconds={seconds} isActive={isWorking} />
-        
+        <div className="flex justify-center -mt-24 z-50 absolute left-0 right-0">
+          {!isWorking ? (
+            <button
+              onClick={handleClockIn}
+              className="group relative overflow-hidden flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 text-white rounded-2xl hover:from-emerald-600 hover:via-green-600 hover:to-teal-600 transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:scale-105 active:scale-95"
+            >
+              <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
+              <div className="relative flex items-center gap-3">
+                <div className="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                  <Play className="w-5 h-5 ml-0.5" />
+                </div>
+                <div className="text-left">
+                  <div className="text-lg font-bold">Start Working</div>
+                  <div className="text-xs opacity-90">
+                    Begin your productive session
+                  </div>
+                </div>
+              </div>
+            </button>
+          ) : (
+            <button
+              onClick={handleClockOut}
+              className="group relative overflow-hidden flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-red-500 via-rose-500 to-pink-500 text-white rounded-2xl hover:from-red-600 hover:via-rose-600 hover:to-pink-600 transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:scale-105 active:scale-95"
+            >
+              <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
+              <div className="relative flex items-center gap-3">
+                <div className="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                  <Square className="w-5 h-5" />
+                </div>
+                <div className="text-left">
+                  <div className="text-lg font-bold">End Session</div>
+                  <div className="text-xs opacity-90">
+                    Complete and submit work
+                  </div>
+                </div>
+              </div>
+            </button>
+          )}
+        </div>
         {/* Floating Status Indicator */}
         {isWorking && (
           <div className="absolute -top-2 -right-2">
@@ -143,91 +206,58 @@ const Dashboard: React.FC<DashboardProps> = ({ onSessionSubmit }) => {
       </div>
 
       {/* Modern Control Button */}
-      <div className="flex justify-center">
-        {!isWorking ? (
-          <button
-            onClick={handleClockIn}
-            className="group relative overflow-hidden flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 text-white rounded-2xl hover:from-emerald-600 hover:via-green-600 hover:to-teal-600 transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:scale-105 active:scale-95"
-          >
-            <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
-            <div className="relative flex items-center gap-3">
-              <div className="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-                <Play className="w-5 h-5 ml-0.5" />
-              </div>
-              <div className="text-left">
-                <div className="text-lg font-bold">Start Working</div>
-                <div className="text-xs opacity-90">Begin your productive session</div>
-              </div>
-            </div>
-          </button>
-        ) : (
-          <button
-            onClick={handleClockOut}
-            className="group relative overflow-hidden flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-red-500 via-rose-500 to-pink-500 text-white rounded-2xl hover:from-red-600 hover:via-rose-600 hover:to-pink-600 transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:scale-105 active:scale-95"
-          >
-            <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
-            <div className="relative flex items-center gap-3">
-              <div className="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-                <Square className="w-5 h-5" />
-              </div>
-              <div className="text-left">
-                <div className="text-lg font-bold">End Session</div>
-                <div className="text-xs opacity-90">Complete and submit work</div>
-              </div>
-            </div>
-          </button>
-        )}
-      </div>
 
       {/* Enhanced Stats Dashboard */}
       {isWorking && (
-        <div className="space-y-4">
-          {/* Primary Stats Row */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-2xl p-5 border border-blue-200 shadow-sm">
-              <div className="flex items-center justify-between mb-3">
-                <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
-                  <Target className="w-6 h-6 text-white" />
+        <div className="space-y-3 text-sm">
+          {/* Primary Stats */}
+          <div className="grid grid-cols-2 gap-3">
+            {/* Productive Hours */}
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-xl p-4 shadow-sm">
+              <div className="flex items-center justify-between mb-2">
+                <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center shadow">
+                  <Target className="w-5 h-5 text-white" />
                 </div>
                 <div className="text-right">
-                  <div className="text-2xl font-bold text-blue-900">
-                    {currentProductiveHours.toFixed(1)}
+                  <div className="text-xl font-bold text-blue-900">
+                    {currentProductiveHours.toFixed(1)}h
                   </div>
-                  <div className="text-xs font-semibold text-blue-700 uppercase tracking-wide">
-                    Productive Hours
+                  <div className="text-[11px] text-blue-700 tracking-wide uppercase">
+                    Productive
                   </div>
                 </div>
               </div>
-              <div className="flex items-center justify-between">
-                <div className="text-xs text-blue-600">
-                  Target: 8.0h
-                </div>
-                <div className={`text-xs font-semibold px-2 py-1 rounded-full ${
-                  currentProductiveHours >= 8 
-                    ? 'bg-green-100 text-green-700' 
-                    : 'bg-amber-100 text-amber-700'
-                }`}>
-                  {currentProductiveHours >= 8 ? 'On Track' : 'In Progress'}
-                </div>
+              <div className="flex items-center justify-between text-xs text-blue-600">
+                <span>Target: 8h</span>
+                <span
+                  className={`px-2 py-0.5 rounded-full font-medium ${
+                    currentProductiveHours >= 8
+                      ? "bg-green-100 text-green-700"
+                      : "bg-amber-100 text-amber-700"
+                  }`}
+                >
+                  {currentProductiveHours >= 8 ? "On Track" : "In Progress"}
+                </span>
               </div>
             </div>
 
-            <div className="bg-gradient-to-br from-emerald-50 to-green-100 rounded-2xl p-5 border border-emerald-200 shadow-sm">
-              <div className="flex items-center justify-between mb-3">
-                <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg">
-                  <TrendingUp className="w-6 h-6 text-white" />
+            {/* Efficiency */}
+            <div className="bg-gradient-to-br from-emerald-50 to-green-100 rounded-xl p-4 shadow-sm">
+              <div className="flex items-center justify-between mb-2">
+                <div className="w-10 h-10 bg-gradient-to-r from-emerald-500 to-green-600 rounded-lg flex items-center justify-center shadow">
+                  <TrendingUp className="w-5 h-5 text-white" />
                 </div>
                 <div className="text-right">
-                  <div className="text-2xl font-bold text-emerald-900">
+                  <div className="text-xl font-bold text-emerald-900">
                     {efficiencyPercentage}%
                   </div>
-                  <div className="text-xs font-semibold text-emerald-700 uppercase tracking-wide">
+                  <div className="text-[11px] text-emerald-700 tracking-wide uppercase">
                     Efficiency
                   </div>
                 </div>
               </div>
-              <div className="w-full bg-emerald-200 rounded-full h-2">
-                <div 
+              <div className="w-full bg-emerald-200/50 rounded-full h-2">
+                <div
                   className="bg-gradient-to-r from-emerald-500 to-green-500 h-2 rounded-full transition-all duration-500"
                   style={{ width: `${Math.min(efficiencyPercentage, 100)}%` }}
                 ></div>
@@ -235,53 +265,52 @@ const Dashboard: React.FC<DashboardProps> = ({ onSessionSubmit }) => {
             </div>
           </div>
 
-          {/* Secondary Stats Row */}
+          {/* Secondary Stats */}
           <div className="grid grid-cols-3 gap-3">
-            <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm text-center">
-              <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-2">
-                <Camera className="w-5 h-5 text-purple-600" />
-              </div>
-              <div className="text-xl font-bold text-gray-900 mb-1">{screenshots.length}</div>
-              <div className="text-xs font-medium text-gray-600">Screenshots</div>
-            </div>
-            
-            <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm text-center">
-              <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center mx-auto mb-2">
-                <Activity className="w-5 h-5 text-amber-600" />
-              </div>
-              <div className="text-xl font-bold text-gray-900 mb-1">{idleEvents.length}</div>
-              <div className="text-xs font-medium text-gray-600">Idle Events</div>
-            </div>
-            
-            <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm text-center">
-              <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center mx-auto mb-2">
-                <Zap className="w-5 h-5 text-indigo-600" />
-              </div>
-              <div className="text-xl font-bold text-gray-900 mb-1">{Math.floor(seconds / 60)}</div>
-              <div className="text-xs font-medium text-gray-600">Total Minutes</div>
-            </div>
+            <MiniStat
+              icon={<Camera className="w-4 h-4 text-purple-600" />}
+              value={screenshots.length}
+              label="Screenshots"
+              bg="purple-100"
+            />
+            <MiniStat
+              icon={<Activity className="w-4 h-4 text-amber-600" />}
+              value={idleEvents.length}
+              label="Idle Events"
+              bg="amber-100"
+            />
+            <MiniStat
+              icon={<Zap className="w-4 h-4 text-indigo-600" />}
+              value={Math.floor(seconds / 60)}
+              label="Total Minutes"
+              bg="indigo-100"
+            />
           </div>
 
-          {/* Progress Indicator */}
-          <div className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-2xl p-5 border border-gray-200">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold text-gray-900">Daily Progress</h3>
+          {/* Progress Bar */}
+          <div className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-xl p-4 shadow-sm">
+            <div className="flex items-center justify-between mb-2 text-[13px] font-medium text-gray-700">
+              <span>Daily Progress</span>
               <span className="text-xs text-gray-500">
-                {Math.min(Math.round((currentProductiveHours / 8) * 100), 100)}% Complete
+                {Math.min(Math.round((currentProductiveHours / 8) * 100), 100)}%
+                Complete
               </span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-3 mb-2">
-              <div 
-                className="bg-gradient-to-r from-blue-500 to-purple-600 h-3 rounded-full transition-all duration-500 relative overflow-hidden"
-                style={{ width: `${Math.min((currentProductiveHours / 8) * 100, 100)}%` }}
-              >
-                <div className="absolute inset-0 bg-white opacity-20 animate-pulse"></div>
-              </div>
+            <div className="w-full bg-gray-200 h-2 rounded-full mb-1 overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-blue-500 to-purple-600 transition-all duration-500"
+                style={{
+                  width: `${Math.min(
+                    (currentProductiveHours / 8) * 100,
+                    100
+                  )}%`,
+                }}
+              />
             </div>
-            <div className="flex justify-between text-xs text-gray-600">
+            <div className="flex justify-between text-[11px] text-gray-500">
               <span>0h</span>
               <span>4h</span>
-              <span className="font-semibold">8h Goal</span>
+              <span className="font-semibold text-gray-600">8h Goal</span>
             </div>
           </div>
         </div>
@@ -290,7 +319,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onSessionSubmit }) => {
       {/* Enhanced Activity Sections */}
       {isWorking && (
         <div className="space-y-6">
-          <IdleTracker idleEvents={idleEvents} totalIdleMinutes={totalIdleMinutes} />
+          <IdleTracker
+            idleEvents={idleEvents}
+            totalIdleMinutes={totalIdleMinutes}
+          />
           <ScreenshotGallery screenshots={screenshots} />
         </div>
       )}
@@ -301,22 +333,29 @@ const Dashboard: React.FC<DashboardProps> = ({ onSessionSubmit }) => {
           <div className="w-20 h-20 bg-gradient-to-r from-blue-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <BarChart3 className="w-10 h-10 text-blue-600" />
           </div>
-          <h3 className="text-2xl font-bold text-gray-900 mb-2">Ready to be productive?</h3>
+          <h3 className="text-2xl font-bold text-gray-900 mb-2">
+            Ready to be productive?
+          </h3>
           <p className="text-gray-600 mb-6 max-w-md mx-auto">
-            Start your work session to begin tracking time, capturing screenshots, and monitoring your productivity.
+            Start your work session to begin tracking time, capturing
+            screenshots, and monitoring your productivity.
           </p>
           <div className="grid grid-cols-3 gap-4 max-w-sm mx-auto">
             <div className="text-center">
               <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mx-auto mb-2">
                 <Target className="w-6 h-6 text-blue-600" />
               </div>
-              <div className="text-xs font-medium text-gray-600">Track Time</div>
+              <div className="text-xs font-medium text-gray-600">
+                Track Time
+              </div>
             </div>
             <div className="text-center">
               <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mx-auto mb-2">
                 <Camera className="w-6 h-6 text-purple-600" />
               </div>
-              <div className="text-xs font-medium text-gray-600">Screenshots</div>
+              <div className="text-xs font-medium text-gray-600">
+                Screenshots
+              </div>
             </div>
             <div className="text-center">
               <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center mx-auto mb-2">
@@ -341,3 +380,24 @@ const Dashboard: React.FC<DashboardProps> = ({ onSessionSubmit }) => {
 };
 
 export default Dashboard;
+const MiniStat = ({
+  icon,
+  value,
+  label,
+  bg,
+}: {
+  icon: React.ReactNode;
+  value: number;
+  label: string;
+  bg: string;
+}) => (
+  <div className="bg-white rounded-xl p-3 border border-gray-100 shadow-sm text-center">
+    <div
+      className={`w-8 h-8 rounded-md flex items-center justify-center mx-auto mb-1 bg-${bg}`}
+    >
+      {icon}
+    </div>
+    <div className="text-lg font-bold text-gray-900">{value}</div>
+    <div className="text-xs text-gray-600">{label}</div>
+  </div>
+);

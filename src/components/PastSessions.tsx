@@ -2,7 +2,6 @@ import React, { useState, useMemo } from "react";
 import {
   Calendar,
   Clock,
-  MessageCircle,
   CheckCircle,
   XCircle,
   AlertCircle,
@@ -18,7 +17,6 @@ import {
   User,
   FileText,
   TrendingUp,
-  MoreHorizontal,
 } from "lucide-react";
 import { TimeSession, HistoryFilters } from "../types";
 import { formatDate, formatTime } from "../utils/timeUtils";
@@ -69,7 +67,7 @@ const PastSessions: React.FC<PastSessionsProps> = ({ sessions }) => {
 
   // Filtered and sorted sessions
   const filteredAndSortedSessions = useMemo(() => {
-    let filtered = enhancedSessions.filter((session) => {
+    const filtered = enhancedSessions.filter((session) => {
       // Status filter
       if (filters.status !== "all" && session.approvalStatus !== filters.status) {
         return false;

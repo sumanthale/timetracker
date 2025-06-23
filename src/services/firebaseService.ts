@@ -1,112 +1,76 @@
-import { 
-  collection, 
-  addDoc, 
-  getDocs, 
-  query, 
-  where, 
-  orderBy, 
-  doc, 
+import {
+  collection,
+  doc,
+  setDoc,
+  getDoc,
+  getDocs,
+  query,
+  where,
+  orderBy,
   updateDoc,
   deleteDoc,
-  Timestamp 
+  Timestamp,
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { TimeSession } from '../types';
+import dayjs from 'dayjs';
 
 export class FirebaseService {
-  // Save a time session to Firestore
+  static sessionsRef = collection(db, 'sessions');
+
+  // Save a time session (enforce one session per user per day)
   static async saveSession(userId: string, session: TimeSession): Promise<string> {
     try {
+      const dateKey = dayjs(session.date).format('YYYY-MM-DD');
+      const sessionId = `${userId}_${dateKey}`;
+      const sessionRef = doc(db, 'sessions', sessionId);
+
       const sessionData = {
         ...session,
+        id: sessionId,
         userId,
+        date: dateKey,
         createdAt: Timestamp.now(),
-        updatedAt: Timestamp.now()
+        updatedAt: Timestamp.now(),
       };
 
-      const docRef = await addDoc(collection(db, 'sessions'), sessionData);
-      return docRef.id;
+      await setDoc(sessionRef, sessionData);
+      return sessionId;
     } catch (error) {
       console.error('Error saving session:', error);
       throw error;
     }
   }
 
-  // Get all sessions for a user
+  // Get all sessions for a user (latest first)
   static async getUserSessions(userId: string): Promise<TimeSession[]> {
     try {
       const q = query(
-        collection(db, 'sessions'),
+        this.sessionsRef,
         where('userId', '==', userId),
-        orderBy('createdAt', 'desc')
+        orderBy('date', 'desc') // !Note can we use orderBy('createdAt', 'desc') instead?
       );
 
       const querySnapshot = await getDocs(q);
-      const sessions: TimeSession[] = [];
-
-      querySnapshot.forEach((doc) => {
-        const data = doc.data();
-        sessions.push({
-          id: doc.id,
-          date: data.date,
-          clockIn: data.clockIn,
-          clockOut: data.clockOut,
-          totalMinutes: data.totalMinutes,
-          idleMinutes: data.idleMinutes,
-          productiveHours: data.productiveHours,
-          screenshots: data.screenshots || [],
-          status: data.status,
-          lessHoursComment: data.lessHoursComment,
-          approvalStatus: data.approvalStatus,
-          approvalComment: data.approvalComment,
-          approvedBy: data.approvedBy,
-          approvedAt: data.approvedAt
-        });
-      });
-
-      return sessions;
+      return querySnapshot.docs.map((doc) => doc.data() as TimeSession);
     } catch (error) {
-      console.error('Error fetching sessions:', error);
+      console.error('Error fetching user sessions:', error);
       throw error;
     }
   }
 
-  // Check if user has already submitted a session for today
+  // Check if user has already submitted a session today
   static async getTodaySession(userId: string): Promise<TimeSession | null> {
     try {
-      const today = new Date();
-      const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-      const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+      const today = dayjs().format('YYYY-MM-DD');
+      const sessionId = `${userId}_${today}`;
 
-      const q = query(
-        collection(db, 'sessions'),
-        where('userId', '==', userId),
-        where('date', '>=', startOfDay.toISOString()),
-        where('date', '<', endOfDay.toISOString()),
-        where('status', '==', 'submitted')
-      );
+      const docRef = doc(db, 'sessions', sessionId);
+      const docSnap = await getDoc(docRef);
 
-      const querySnapshot = await getDocs(q);
-      
-      if (!querySnapshot.empty) {
-        const doc = querySnapshot.docs[0];
-        const data = doc.data();
-        return {
-          id: doc.id,
-          date: data.date,
-          clockIn: data.clockIn,
-          clockOut: data.clockOut,
-          totalMinutes: data.totalMinutes,
-          idleMinutes: data.idleMinutes,
-          productiveHours: data.productiveHours,
-          screenshots: data.screenshots || [],
-          status: data.status,
-          lessHoursComment: data.lessHoursComment,
-          approvalStatus: data.approvalStatus,
-          approvalComment: data.approvalComment,
-          approvedBy: data.approvedBy,
-          approvedAt: data.approvedAt
-        };
+      if (docSnap.exists()) {
+        const data = docSnap.data() as TimeSession;
+        return data.status === 'submitted' ? data : null;
       }
 
       return null;
@@ -128,8 +92,8 @@ export class FirebaseService {
 
   // Update session approval status
   static async updateSessionApproval(
-    sessionId: string, 
-    approvalStatus: 'approved' | 'rejected', 
+    sessionId: string,
+    approvalStatus: 'approved' | 'rejected',
     approvalComment?: string,
     approvedBy?: string
   ): Promise<void> {
@@ -139,8 +103,8 @@ export class FirebaseService {
         approvalStatus,
         approvalComment: approvalComment || '',
         approvedBy: approvedBy || '',
-        approvedAt: new Date().toISOString(),
-        updatedAt: Timestamp.now()
+        approvedAt: dayjs().toISOString(),
+        updatedAt: Timestamp.now(),
       });
     } catch (error) {
       console.error('Error updating session approval:', error);
@@ -148,47 +112,49 @@ export class FirebaseService {
     }
   }
 
-  // Get sessions by date range
+  // Get user sessions between dates
   static async getSessionsByDateRange(
-    userId: string, 
-    startDate: Date, 
+    userId: string,
+    startDate: Date,
     endDate: Date
   ): Promise<TimeSession[]> {
     try {
+      const start = dayjs(startDate).format('YYYY-MM-DD');
+      const end = dayjs(endDate).format('YYYY-MM-DD');
+
       const q = query(
-        collection(db, 'sessions'),
+        this.sessionsRef,
         where('userId', '==', userId),
-        where('date', '>=', startDate.toISOString()),
-        where('date', '<=', endDate.toISOString()),
+        where('date', '>=', start),
+        where('date', '<=', end),
         orderBy('date', 'desc')
       );
 
-      const querySnapshot = await getDocs(q);
-      const sessions: TimeSession[] = [];
-
-      querySnapshot.forEach((doc) => {
-        const data = doc.data();
-        sessions.push({
-          id: doc.id,
-          date: data.date,
-          clockIn: data.clockIn,
-          clockOut: data.clockOut,
-          totalMinutes: data.totalMinutes,
-          idleMinutes: data.idleMinutes,
-          productiveHours: data.productiveHours,
-          screenshots: data.screenshots || [],
-          status: data.status,
-          lessHoursComment: data.lessHoursComment,
-          approvalStatus: data.approvalStatus,
-          approvalComment: data.approvalComment,
-          approvedBy: data.approvedBy,
-          approvedAt: data.approvedAt
-        });
-      });
-
-      return sessions;
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map((doc) => doc.data() as TimeSession);
     } catch (error) {
-      console.error('Error fetching sessions by date range:', error);
+      console.error('Error fetching date range sessions:', error);
+      throw error;
+    }
+  }
+
+  // Get all sessions by date range (for admin)
+  static async getAllSessionsByDateRange(startDate: Date, endDate: Date): Promise<TimeSession[]> {
+    try {
+      const start = dayjs(startDate).format('YYYY-MM-DD');
+      const end = dayjs(endDate).format('YYYY-MM-DD');
+
+      const q = query(
+        this.sessionsRef,
+        where('date', '>=', start),
+        where('date', '<=', end),
+        orderBy('date', 'desc')
+      );
+
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map((doc) => doc.data() as TimeSession);
+    } catch (error) {
+      console.error('Error fetching all sessions by date range:', error);
       throw error;
     }
   }

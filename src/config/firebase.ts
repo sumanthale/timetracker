@@ -3,12 +3,12 @@ import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyB4VkSNy9EjSboqk2l4TWxtihCz6w7c0pk",
-  authDomain: "croud-funding.firebaseapp.com",
-  projectId: "croud-funding",
-  storageBucket: "croud-funding.firebasestorage.app",
-  messagingSenderId: "227266900318",
-  appId: "1:227266900318:web:8f5f39c842c2c5ec855fcf",
+  apiKey: "AIzaSyAg6L_q1cB4Pu6eQYXA-xx09T-9rlBIRGA",
+  authDomain: "nile-track.firebaseapp.com",
+  projectId: "nile-track",
+  storageBucket: "nile-track.firebasestorage.app",
+  messagingSenderId: "421194884833",
+  appId: "1:421194884833:web:c72b5169967da203bd79a0"
 };
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);

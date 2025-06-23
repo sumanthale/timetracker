@@ -64,7 +64,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onSessionSubmit }) => {
     checkTodaySession();
   }, [currentUser]);
 
-  // Simulate idle time detection
+  //!Note: Simulate idle time detection
   useEffect(() => {
     if (!isWorking) return;
 
@@ -88,7 +88,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onSessionSubmit }) => {
     return () => clearInterval(idleInterval);
   }, [isWorking]);
 
-  // Simulate screenshot capture every 10 minutes
+  //!Note: Simulate screenshot capture every 10 minutes
   useEffect(() => {
     if (!isWorking) return;
 
